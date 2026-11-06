@@ -1,1 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Clicker</title>
+    <!-- PWA / Add to Home Screen settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cookie Game">
+    <meta name="theme-color" content="#f6d365">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍪</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Ensure hidden elements are strictly hidden */
+        .hidden { display: none !important; }
+        
+        /* Fun background for the dummy app */
+        .fun-bg {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+        
+        /* Vault background */
+        .vault-bg {
+            background-color: #0f172a; /* slate-900 */
+        }
+        
+        /* Prevent selection on tap targets */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body id="app-body" class="fun-bg text-slate-800 font-sans antialiased fixed inset-0 flex flex-col overflow-hidden transition-colors duration-500">
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-full shadow-lg z-50 transition-opacity duration-300 opacity-0 pointer-events-none">
+        Message
+    </div>
+
+    <!-- ==========================================
+         VIEW 1: DISGUISED "FUN" APP
+         ========================================== -->
+    <div id="view-main" class="flex-1 flex flex-col items-center justify-center p-6 relative">
+        <h1 class="text-4xl font-black mb-8 text-white drop-shadow-md">Cookie Clicker!</h1>
+        
+        <!-- Dummy Game Element -->
+        <button onclick="clickCookie()" class="w-48 h-48 bg-amber-400 rounded-full shadow-2xl border-8 border-amber-600 flex items-center justify-center active:scale-95 transition-transform">
+            <span class="text-6xl">🍪</span>
+        </button>
+        <p class="mt-8 text-2xl font-bold text-white drop-shadow">Score: <span id="score">0</span></p>
+
+        <!-- HIDDEN HOLD TRIGGER -->
+        <div id="secret-trigger" class="absolute bottom-2 right-2 flex items-center justify-center h-16 w-28 select-none touch-none cursor-pointer active:opacity-75 transition-opacity" oncontextmenu="return false;" style="-webkit-touch-callout: none; -webkit-user-select: none;">
+            <span class="text-white/40 text-xs tracking-wider font-mono pointer-events-none">v1.0.4</span>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 2: THE "EMPTY" CHALLENGE
+         ========================================== -->
+    <div id="view-empty" class="hidden flex-1 flex flex-col items-center justify-center bg-black text-white">
+        <button id="btn-empty" class="px-8 py-4 bg-zinc-900 active:bg-zinc-800 text-zinc-600 rounded-lg shadow-md no-select touch-manipulation text-base transition-colors">
+            empty
+        </button>
+    </div>
+
+    <!-- ==========================================
+         VIEW 3: PASSWORD SCREEN
+         ========================================== -->
+    <div id="view-password" class="hidden flex-1 flex flex-col items-center justify-center vault-bg text-white px-6">
+        <div class="bg-slate-800 p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
+            <svg class="w-12 h-12 mx-auto mb-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <h2 id="pwd-title" class="text-2xl font-bold mb-2">Enter Password</h2>
+            <p id="pwd-subtitle" class="text-slate-400 text-sm mb-6">Access your secure vault.</p>
+            
+            <input type="password" id="pwd-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 mb-4 text-center text-white focus:outline-none focus:border-emerald-500" placeholder="••••••••">
+            
+            <button onclick="submitPassword()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg px-4 py-3 transition-colors">
+                Unlock
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         VIEW 4: VAULT GALLERY
+         ========================================== -->
+    <div id="view-vault" class="hidden flex-1 flex flex-col min-h-0 vault-bg text-white relative">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-4 bg-slate-800 border-b border-slate-700 shadow-md sticky top-0 z-20">
+            <button onclick="lockVault()" class="px-2 sm:px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center text-sm font-medium">
+                <svg class="w-5 h-5 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <span class="hidden sm:inline">Lock</span>
+            </button>
+            <h2 class="text-lg font-bold">My Vault</h2>
+            <div class="flex gap-2">
+                <button onclick="openDeleteAllModal()" class="px-2 sm:px-3 py-2 rounded-lg bg-red-900/40 hover:bg-red-800/60 text-red-300 hover:text-white transition-colors flex items-center text-sm font-medium border border-red-800/50">
+                    <svg class="w-4 h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    <span class="hidden sm:inline">Clear</span>
+                </button>
+                <button onclick="openChangePasswordModal()" class="px-2 sm:px-3 py-2 rounded-lg bg-slate-700/60 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center text-sm font-medium">
+                    <svg class="w-4 h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                    <span class="hidden sm:inline">Pass</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Media Grid -->
+        <div id="file-list" class="flex-1 overflow-y-auto min-h-0 p-1 pb-32 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1 content-start">
+            <!-- Items injected by JS -->
+        </div>
+
+        <!-- Centered Bottom Floating Upload Button -->
+        <div class="fixed bottom-6 inset-x-0 flex justify-center items-center pointer-events-none z-30">
+            <button onclick="document.getElementById('file-input').click()" class="pointer-events-auto bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-full p-4 shadow-xl shadow-emerald-950/60 transition-all flex items-center justify-center border-2 border-emerald-400/40">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+            </button>
+            <input type="file" id="file-input" class="hidden" multiple accept="image/*,video/*" onchange="handleFileUpload(event)">
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL: DELETE ALL CONFIRMATION
+         ========================================== -->
+    <div id="modal-delete-all" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-sm text-center shadow-2xl">
+            <svg class="w-12 h-12 mx-auto mb-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <h3 class="text-xl font-bold mb-2 text-white">Delete All Files?</h3>
+            <p class="text-slate-300 text-sm mb-6">Are you sure you want to delete all files? This cannot be undone.</p>
+            
+            <div class="flex gap-2">
+                <button onclick="closeDeleteAllModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-2.5 rounded-lg transition-colors font-medium">
+                    Cancel
+                </button>
+                <button onclick="confirmDeleteAll()" class="flex-1 bg-red-600 hover:bg-red-500 text-white py-2.5 rounded-lg transition-colors font-medium">
+                    Delete All
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- ==========================================
+         MODAL: CHANGE PASSWORD
+         ========================================== -->
+    <div id="modal-change-pwd" class="hidden fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-sm text-center shadow-2xl">
+            <svg class="w-10 h-10 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+            <h3 class="text-xl font-bold mb-4 text-white">Change Password</h3>
+            
+            <input type="password" id="input-old-pwd" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 mb-3 text-center text-white focus:outline-none focus:border-emerald-500" placeholder="Current Password">
+            <input type="password" id="input-new-pwd" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 mb-6 text-center text-white focus:outline-none focus:border-emerald-500" placeholder="New Password">
+            
+            <div class="flex gap-2">
+                <button onclick="closeChangePasswordModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 py-2.5 rounded-lg transition-colors font-medium">
+                    Cancel
+                </button>
+                <button onclick="submitChangePassword()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-lg transition-colors font-medium">
+                    Save
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODAL: FULL SCREEN MEDIA VIEWER
+         ========================================== -->
+    <div id="media-modal" class="hidden fixed inset-0 z-50 bg-black/95 flex-col items-center justify-center backdrop-blur-sm">
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-white p-3 bg-slate-800/60 hover:bg-slate-700 rounded-full z-50 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        
+        <!-- Image placeholder -->
+        <img id="modal-img" class="max-w-full max-h-full object-contain hidden pointer-events-none" src="" alt="Full screen image">
+        
+        <!-- Video placeholder -->
+        <video id="modal-video" class="max-w-full max-h-full hidden outline-none" controls playsinline>
+            <source id="modal-video-src" src="">
+        </video>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC
+         ========================================== -->
+    <script>
+        // --- 1. DUMMY APP LOGIC ---
+        let score = 0;
+        function clickCookie() {
+            score++;
+            document.getElementById('score').innerText = score;
+        }
+
+        // --- UI UTILITIES ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+
+        function switchView(viewId) {
+            const views = ['view-main', 'view-empty', 'view-password', 'view-vault'];
+            views.forEach(v => {
+                document.getElementById(v).classList.add('hidden');
+                document.getElementById(v).classList.remove('flex');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+            document.getElementById(viewId).classList.add('flex');
+
+            // Change background when entering vault
+            const body = document.getElementById('app-body');
+            if (viewId === 'view-main') {
+                body.classList.remove('vault-bg');
+                body.classList.add('fun-bg');
+            } else {
+                body.classList.remove('fun-bg');
+                body.classList.add('vault-bg');
+            }
+        }
+
+        // --- 2. HOLD TRIGGER LOGIC ---
+        const triggerBtn = document.getElementById('secret-trigger');
+        let holdTimer;
+
+        function startHold(e) {
+            if (e.cancelable) e.preventDefault(); // Stop mobile magnifier/selection
+            cancelHold();
+            holdTimer = setTimeout(() => {
+                if (navigator.vibrate) navigator.vibrate(40);
+                switchView('view-empty');
+            }, 1000); // 1.0 second hold with large hit area
+        }
+        function cancelHold() {
+            if (holdTimer) {
+                clearTimeout(holdTimer);
+                holdTimer = null;
+            }
+        }
+        triggerBtn.addEventListener('mousedown', startHold);
+        triggerBtn.addEventListener('touchstart', startHold, {passive: false});
+        triggerBtn.addEventListener('mouseup', cancelHold);
+        triggerBtn.addEventListener('mouseleave', cancelHold);
+        triggerBtn.addEventListener('touchend', cancelHold);
+        triggerBtn.addEventListener('touchcancel', cancelHold);
+
+        // --- 3. TRIPLE CLICK CHALLENGE ("empty" button) ---
+        const btnEmpty = document.getElementById('btn-empty');
+        let clickTimes = [];
+
+        btnEmpty.addEventListener('click', () => {
+            const now = Date.now();
+            clickTimes.push(now);
+            
+            // Allow 3 clicks in up to 800ms
+            clickTimes = clickTimes.filter(t => now - t <= 800);
+            
+            if (clickTimes.length >= 3) {
+                clickTimes = []; // reset
+                if (navigator.vibrate) navigator.vibrate(40);
+                checkPasswordSetup();
+            }
+        });
+
+        // --- 4. PASSWORD LOGIC ---
+        function checkPasswordSetup() {
+            const savedPwd = localStorage.getItem('vault_pwd');
+            const title = document.getElementById('pwd-title');
+            const subtitle = document.getElementById('pwd-subtitle');
+            
+            if (!savedPwd) {
+                title.innerText = "Set Password";
+                subtitle.innerText = "Create a password for your vault.";
+            } else {
+                title.innerText = "Enter Password";
+                subtitle.innerText = "Access your secure vault.";
+            }
+            document.getElementById('pwd-input').value = '';
+            switchView('view-password');
+        }
+
+        function submitPassword() {
+            const input = document.getElementById('pwd-input').value;
+            const savedPwd = localStorage.getItem('vault_pwd');
+
+            if (!input) {
+                showToast("Please enter a password.");
+                return;
+            }
+
+            if (!savedPwd) {
+                // Set new password (saved only on this device)
+                localStorage.setItem('vault_pwd', input);
+                showToast("Password set successfully!");
+                switchView('view-vault');
+                loadFilesFromDB();
+            } else {
+                // Check existing password
+                if (input === savedPwd) {
+                    switchView('view-vault');
+                    loadFilesFromDB();
+                } else {
+                    showToast("Incorrect password.");
+                    document.getElementById('pwd-input').value = '';
+                }
+            }
+        }
+
+        // --- 5. PRIVATE ON-DEVICE STORAGE (IndexedDB) ---
+        let dbInstance = null;
+        let vaultFiles = [];
+
+        function initDatabase() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('SecretVaultDB', 1);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('files')) {
+                        db.createObjectStore('files', { keyPath: 'id', autoIncrement: true });
+                    }
+                };
+                req.onsuccess = (e) => {
+                    dbInstance = e.target.result;
+                    resolve(dbInstance);
+                };
+                req.onerror = (e) => reject(e);
+            });
+        }
+
+        async function loadFilesFromDB() {
+            if (!dbInstance) await initDatabase();
+            const tx = dbInstance.transaction('files', 'readonly');
+            const store = tx.objectStore('files');
+            const req = store.getAll();
+
+            req.onsuccess = () => {
+                // Free previous blob URLs to prevent memory leaks
+                vaultFiles.forEach(f => {
+                    if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+                });
+                
+                vaultFiles = req.result.map(item => ({
+                    id: item.id,
+                    name: item.name,
+                    type: item.type,
+                    blob: item.blob,
+                    previewUrl: URL.createObjectURL(item.blob)
+                }));
+                renderFiles();
+            };
+        }
+
+        function lockVault() {
+            // Revoke URLs from memory when locked
+            vaultFiles.forEach(f => {
+                if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+            });
+            vaultFiles = [];
+            switchView('view-main');
+            showToast("Vault Locked");
+        }
+
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            if (!dbInstance) await initDatabase();
+
+            const tx = dbInstance.transaction('files', 'readwrite');
+            const store = tx.objectStore('files');
+            let addedCount = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+                    store.add({
+                        name: file.name,
+                        t
